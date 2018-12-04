@@ -1,0 +1,205 @@
+#include "MeMegaPi.h"
+#include "Wire.h"
+#include "SoftwareSerial.h"
+
+//Defining Outputs (Left and Right Motors; Armature)
+MeMegaPiDCMotor MotorL(PORT2B);			//Creating Motor objects
+MeMegaPiDCMotor MotorR(PORT1B);
+
+MeMegaPiDCMotor Arm(PORT3B);
+MeDCMotor Hand(PORT4B);
+
+const int MotorPin1 = 18;				//Attaching Motor pins to variables
+const int MotorPin2 = 19;
+const int NE1 = 31;
+const int NE2 = 38;
+
+const int ArmMov1 = 6;
+const int ArmMov2 = 9;
+
+int ArmSpeed = 250;
+int HandSpeed = 250;
+int Counter = 0;
+int Angle = 0;
+int InitState1;
+int LastState1;
+
+int  MotorSpeed = 100;
+int  armSpeed = 100;
+int  handSpeed = 100;
+
+//Defining Inputs (LineFollower and UltraSonic Sensors)
+  MeLineFollower LineFollower(PORT_8);	//Creating Sensor objects
+  MeUltrasonicSensor Sonic(PORT_6);
+
+const byte LFSensorL = A12;				//Attaching sensor pins to variables
+const byte LFSensorR = A13;
+
+const byte SSensorT = A8;
+const byte SSensorR = A9;
+
+void setup()
+{
+	//Initializing hardware
+
+	
+
+	//Motors
+	pinMode(MotorPin1, OUTPUT);
+	pinMode(MotorPin2, OUTPUT);
+	pinMode(NE2, OUTPUT);
+	pinMode(NE1, OUTPUT);
+
+	//Armature and Hand
+	pinMode(ArmMov1, INPUT);
+	pinMode(ArmMov2, INPUT);
+
+	Arm.run(200);
+
+	//Line following sensor
+	pinMode(LFSensorL, INPUT);
+	pinMode(LFSensorR, INPUT);
+
+	//Ultrasonic
+	pinMode(SSensorT, OUTPUT);
+	pinMode(SSensorR, INPUT);
+
+	//Calibrating the Ultrasonic Sensor to pre-check surrounding area
+	digitalWrite(SSensorT, LOW);
+	delayMicroseconds(2);
+	digitalWrite(SSensorT, HIGH);
+	delayMicroseconds(10);
+	digitalWrite(SSensorT, LOW);
+
+	Serial.begin(9600);
+}
+
+void loop()
+{
+  
+    //Sensor 1 is left; Sensor 2 is right
+    int sensorState = LineFollower.readSensors();
+
+    switch (sensorState)
+    {
+      //Both sensors are on the line
+      case S1_IN_S2_IN:
+        Reverse();
+        break;
+    
+      //Right sensor off line, left sensor on line
+      case S1_IN_S2_OUT:
+        Right();
+        break;
+
+      //Left sensor off line, right sensor on line
+      case S1_OUT_S2_IN:
+        Left();
+        break;
+
+      //Both sensors are off the line
+      case S1_OUT_S2_OUT:
+        Spin();
+        break;
+
+      default:
+        Spin();
+        break;
+    }
+    /*
+		//Sensor 1 is left; Sensor 2 is right
+		int sensorState = LineFollower.readSensors();
+
+		
+		//Sensor 1 and 2 are off black line
+		if (sensorState = S1_OUT_S2_OUT)
+		{
+			Serial.println("Sensor 1 and 2 are off black line");
+			Forward();
+		}
+
+		//Sensor 1 is off black line; Sensor 2 is on black line
+		else if (sensorState = S1_OUT_S2_IN)
+		{
+			Serial.println("Sensor 1 off black line");
+			Left();
+		}
+
+		//Sensor 2 is off black line; Sensor 1 is on black line
+		else if (sensorState = S1_IN_S2_OUT)
+		{
+			Serial.println("Sensor 2 off black line");
+			Right();
+		}
+
+		//The final state is 3, with both Sensors 1 and 2 on black line
+		else if (sensorState = S1_IN_S2_IN)
+		{
+			Serial.println("Sensor 1 and 2 are on black line");
+			Right;
+		}
+  */
+  
+		//Looping distance readings for logging
+		Serial.print(Sonic.distanceInch());
+		Serial.print("in, ");
+		Serial.print(Sonic.distanceCm());
+		Serial.print("cm");
+		Serial.println();
+
+}
+
+//Robot directions
+void Left()
+{
+	MotorL.run(-MotorSpeed);					// This is left motor
+	MotorR.run(-MotorSpeed);					// This is right motor
+	
+}
+
+void Right()
+{
+	MotorL.run(MotorSpeed);
+	MotorR.run(MotorSpeed);
+	
+}
+
+void Forward()
+{
+	MotorL.run(MotorSpeed);
+	MotorR.run(-MotorSpeed);
+}
+
+void Reverse()
+{
+  MotorL.run(-MotorSpeed);
+  MotorR.run(MotorSpeed);
+}
+
+void Stop()
+{
+	MotorL.run(0);
+	MotorR.run(0);
+}
+
+//Armature movements
+void Arm_Up()
+{
+	Arm.run(armSpeed);
+}
+
+void Arm_Down()
+{
+	Arm.run(-armSpeed);
+}
+
+//Armature hand movements
+void Hand_Open()
+{
+	Hand.run(handSpeed);
+}
+
+void Hand_Close()
+{
+	Hand.run(-handSpeed);
+}
